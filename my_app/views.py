@@ -25,6 +25,12 @@ class ListSurvey(APIView):
             return Response(serializer_obj.data)
         return Response(serializer_obj.errors)
 
+class IdSurvey(APIView):
+    def get(self,request,id):
+        obj = Survey.objects.get(id=id)
+        serializer_obj = SurveySerializer(obj)
+        return Response(serializer_obj.data)
+
 
 class ListUser(APIView):
     def get(self,request):

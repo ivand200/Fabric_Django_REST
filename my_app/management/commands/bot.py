@@ -19,24 +19,26 @@ import sqlite3
 from my_app.models import Survey
 from my_app.models import User
 
-COLOR, HOBBIES, OLD = range(3)
+COLOR, HOBBIES, OLD, QUALITY = range(4)
+
 
 def start(update: Update, _: CallbackContext):
-    reply_keyboard = [['Red', 'Blue', 'Orange', 'Black']]
+    """START Survey, FIRST QUETIOS"""
+    reply_keyboard = [['Red'], ['Blue'], ['Orange'], ['Black']]
     m = update.message
     username = update.message.from_user.username
     chat_id = update.effective_chat.id
     c, created = User.objects.get_or_create(name=chat_id)
     update.message.reply_text(
-        'Hi! This is survey'
+        'Hi! This is survey\n'
         f'What is your favorite color?',
         reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True),
     )
-
     return COLOR
 
 
 def color(update: Update, _: CallbackContext):
+    """SECOND QUESTION"""
     reply_keyboard = [['Netflix'], ['Reading'], ['Drinking'], ['Travel']]
     user = update.message.from_user
     chat_id = update.effective_chat.id
@@ -45,28 +47,28 @@ def color(update: Update, _: CallbackContext):
     s = Survey(user = c, question = "What is your favorite color?", answer = m)
     s.save()
     update.message.reply_text(
-        'Done! Now, Choose your hobbies',
+        'Done! Now, Choose your favorite hobby',
         reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
-
     return HOBBIES
 
 
 def hobbies(update: Update, _: CallbackContext):
+    """THIRD QUESTION"""
     user = update.message.from_user
     m = update.message.text
     chat_id = update.effective_chat.id
     m = update.message.text
     c, created = User.objects.get_or_create(name=chat_id)
-    s = Survey(user = c, question = "Choose your hobbies", answer = m)
+    s = Survey(user = c, question = "Choose your hobby", answer = m)
     s.save()
     update.message.reply_text(
         'Cool! Now, please type your age.'
     )
-
     return OLD
 
+
 def old(update: Update, _: CallbackContext):
-    reply_keyboard = [['Back'], ['Stat']]
+    """FOURTH QUESTION, END OF SURVEY"""
     user = update.message.from_user
     m = update.message.text
     chat_id = update.effective_chat.id
@@ -74,14 +76,29 @@ def old(update: Update, _: CallbackContext):
     s = Survey(user = c, question = "Add your age", answer = m)
     s.save()
     update.message.reply_text(
-        f"Thank you for your time!", reply_markup=ReplyKeyboardMarkup(reply_keyboard))
+        f"Thank you, now type your best personal qualities (2-3)\n"
+        f"Example:\nPatience, Courage...")
+    return QUALITY
 
+
+def regular (update: Update, _: CallbackContext):
+    reply_keyboard = [['Statistics']]
+    user = update.message.from_user
+    m = update.message.text
+    chat_id = update.effective_chat.id
+    m = update.message.text
+    chat_id = update.effective_chat.id
+    c, created = User.objects.get_or_create(name=chat_id)
+    s = Survey(user = c, question = "type your best personal qualities", answer = m.lower())
+    s.save()
+    update.message.reply_text(
+        f"{m.lower()}\n To repeat survey use command /start", reply_markup = ReplyKeyboardMarkup(reply_keyboard))
     return ConversationHandler.END
 
 def cancel(update: Update, _: CallbackContext):
     user = update.message.from_user
     update.message.reply_text(
-        f'dsvdsvd.', reply_markup=ReplyKeyboardRemove()
+        'use command /start to start again', reply_markup=ReplyKeyboardRemove()
     )
 
 
@@ -89,7 +106,7 @@ def stat(update: Update, _: CallbackContext):
     user = update.message.from_user
     chat_id = update.effective_chat.id
     c, created = User.objects.get_or_create(name=chat_id)
-    s = Survey.objects.filter(user=c)
+    s = Survey.objects.filter(user=c).order_by("-created_at")[:4]
     lst = list()
     list_str = "\n".join(str(item) for item in s)
     cart_clear = list_str.replace('(','').replace(')','').replace(',','').replace('[','').replace(']','')
@@ -107,11 +124,8 @@ class Command(BaseCommand):
 
         updater = Updater(bot=bot, use_context=True,)
 
-        stat_handler = MessageHandler(Filters.text("Stat"), stat)
+        stat_handler = MessageHandler(Filters.text("Statistics"), stat)
         updater.dispatcher.add_handler(stat_handler)
-
-        back_handler = MessageHandler(Filters.text("Back"), start)
-        updater.dispatcher.add_handler(back_handler)
 
         conv_handler = ConversationHandler(
         entry_points=[CommandHandler('start', start)],
@@ -119,6 +133,7 @@ class Command(BaseCommand):
             COLOR: [MessageHandler(Filters.regex('^(Red|Blue|Orange|Black)$'), color)],
             HOBBIES: [MessageHandler(Filters.regex('^(Netflix|Reading|Drinking|Travel)$'), hobbies)],
             OLD: [MessageHandler(Filters.regex('[0-9]+'), old)],
+            QUALITY: [MessageHandler(Filters.text & ~(Filters.command | Filters.regex('^Done$')), regular)],
         },
         fallbacks=[CommandHandler('cancel', cancel)],
         )
