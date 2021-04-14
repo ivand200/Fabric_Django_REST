@@ -21,7 +21,7 @@ from my_app.models import User
 
 COLOR, HOBBIES, OLD = range(3)
 
-def start(update: Update, _: CallbackContext) -> int:
+def start(update: Update, _: CallbackContext):
     reply_keyboard = [['Red', 'Blue', 'Orange', 'Black']]
     m = update.message
     username = update.message.from_user.username
@@ -37,7 +37,7 @@ def start(update: Update, _: CallbackContext) -> int:
 
 
 def color(update: Update, _: CallbackContext):
-    reply_keyboard = [['Netflix', 'Reading', 'Drinking', 'Travel']]
+    reply_keyboard = [['Netflix'], ['Reading'], ['Drinking'], ['Travel']]
     user = update.message.from_user
     chat_id = update.effective_chat.id
     m = update.message.text
@@ -60,12 +60,13 @@ def hobbies(update: Update, _: CallbackContext):
     s = Survey(user = c, question = "Choose your hobbies", answer = m)
     s.save()
     update.message.reply_text(
-        'Gorgeous! Now, please type your age.'
+        'Cool! Now, please type your age.'
     )
 
     return OLD
 
 def old(update: Update, _: CallbackContext):
+    reply_keyboard = [['Back'], ['Stat']]
     user = update.message.from_user
     m = update.message.text
     chat_id = update.effective_chat.id
@@ -73,16 +74,27 @@ def old(update: Update, _: CallbackContext):
     s = Survey(user = c, question = "Add your age", answer = m)
     s.save()
     update.message.reply_text(
-        f"Thank you for your time!")
+        f"Thank you for your time!", reply_markup=ReplyKeyboardMarkup(reply_keyboard))
 
     return ConversationHandler.END
 
-
-def cancel(update: Update, _: CallbackContext) -> int:
+def cancel(update: Update, _: CallbackContext):
     user = update.message.from_user
-    logger.info("User %s canceled the conversation.", user.first_name)
     update.message.reply_text(
-        'Bye! I hope we can talk again some day.', reply_markup=ReplyKeyboardRemove()
+        f'dsvdsvd.', reply_markup=ReplyKeyboardRemove()
+    )
+
+
+def stat(update: Update, _: CallbackContext):
+    user = update.message.from_user
+    chat_id = update.effective_chat.id
+    c, created = User.objects.get_or_create(name=chat_id)
+    s = Survey.objects.filter(user=c)
+    lst = list()
+    list_str = "\n".join(str(item) for item in s)
+    cart_clear = list_str.replace('(','').replace(')','').replace(',','').replace('[','').replace(']','')
+    update.message.reply_text(
+        f'{cart_clear}.', reply_markup=ReplyKeyboardRemove()
     )
 
 class Command(BaseCommand):
@@ -94,6 +106,9 @@ class Command(BaseCommand):
         print(bot.get_me())
 
         updater = Updater(bot=bot, use_context=True,)
+
+        stat_handler = MessageHandler(Filters.text("Stat"), stat)
+        updater.dispatcher.add_handler(stat_handler)
 
         back_handler = MessageHandler(Filters.text("Back"), start)
         updater.dispatcher.add_handler(back_handler)

@@ -9,4 +9,4 @@ class UserSerializer(ModelSerializer):
 class SurveySerializer(ModelSerializer):
     class Meta:
         model = Survey
-        fields = ["user", "question", "answer", "created_at", "ended_at"]
+        fields = ["id", "user", "question", "answer", "created_at"]

@@ -23,7 +23,7 @@ class ListSurvey(APIView):
         if serializer_obj.is_valid():
             serializer_obj.save()
             return Response(serializer_obj.data)
-        return Response(serializer_obj.error)
+        return Response(serializer_obj.errors)
 
 
 class ListUser(APIView):
@@ -38,4 +38,37 @@ class ListUser(APIView):
         if serializer_obj.is_valid():
             serializer_obj.save()
             return Response(serializer_obj.data)
-        return Response(serializer_obj.error)
+        return Response(serializer_obj.errors)
+
+class UpdateSurvey(APIView):
+
+    def get_object(self,id):
+        try:
+            obj = Survey.objects.get(id=id)
+            return obj
+        except:
+            raise Http404
+
+
+    def put(self,request,id):
+        data = request.data
+        obj = Survey.objects.get(id=id)
+        serializer_obj = SurveySerializer(obj,data=data)
+        if serializer_obj.is_valid():
+            serializer_obj.save()
+            return Response(serializer_obj.data)
+        return Response(serializer_obj.errors)
+
+    def get(self,request,id):
+        data = request.data
+        obj = Survey.objects.get(id=id)
+        serializer_obj = SurveySerializer(obj, data=data)
+        if serializer_obj.is_valid():
+            serializer_obj.save()
+            return Response(serializer_obj.data)
+        return Response(serializer_obj.errors)
+
+    def delete(self,request,id):
+        obj = Survey.objects.get(id=id)
+        obj.delete()
+        return Response({"response":"Survey is successfully deleted"})
