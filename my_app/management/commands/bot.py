@@ -30,9 +30,10 @@ def start(update: Update, _: CallbackContext):
     chat_id = update.effective_chat.id
     c, created = User.objects.get_or_create(name=chat_id)
     update.message.reply_text(
-        'Hi! This is survey\n'
-        f'What is your favorite color?',
+        'Hi! This is survey, please answer few questions\n\n'
+        f'<b>What is your favorite color?</b>',
         reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True),
+                                          parse_mode=telegram.ParseMode.HTML
     )
     return COLOR
 
@@ -47,8 +48,10 @@ def color(update: Update, _: CallbackContext):
     s = Survey(user = c, question = "What is your favorite color?", answer = m)
     s.save()
     update.message.reply_text(
-        'Done! Now, Choose your favorite hobby',
-        reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
+        'Done!\n<b>Choose your favorite hobby</b>',
+        reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True),
+                                          parse_mode=telegram.ParseMode.HTML
+                                          )
     return HOBBIES
 
 
@@ -62,7 +65,7 @@ def hobbies(update: Update, _: CallbackContext):
     s = Survey(user = c, question = "Choose your hobby", answer = m)
     s.save()
     update.message.reply_text(
-        'Cool! Now, please type your age.'
+        'Cool!\n <b>Now, please type your age.</b>', parse_mode=telegram.ParseMode.HTML
     )
     return OLD
 
@@ -76,13 +79,12 @@ def old(update: Update, _: CallbackContext):
     s = Survey(user = c, question = "Add your age", answer = m)
     s.save()
     update.message.reply_text(
-        f"Thank you, now type your best personal qualities (2-3)\n"
-        f"Example:\nPatience, Courage...")
+        f"Thank you,\n <b>Now type your best personal qualities (2-3)</b>\n"
+        f"<i>Example:\nPatience, Courage...</i>", parse_mode=telegram.ParseMode.HTML)
     return QUALITY
 
 
 def regular (update: Update, _: CallbackContext):
-    reply_keyboard = [['Statistics']]
     user = update.message.from_user
     m = update.message.text
     chat_id = update.effective_chat.id
@@ -90,9 +92,14 @@ def regular (update: Update, _: CallbackContext):
     chat_id = update.effective_chat.id
     c, created = User.objects.get_or_create(name=chat_id)
     s = Survey(user = c, question = "type your best personal qualities", answer = m.lower())
+    stat = Survey.objects.filter(user=c).order_by("-created_at")[:4]
+    lst = list()
+    list_str = "\n".join(str(item) for item in stat)
+    cart_clear = list_str.replace('(','').replace(')','').replace(',','').replace('[','').replace(']','')
     s.save()
     update.message.reply_text(
-        f"{m.lower()}\n To repeat survey use command /start", reply_markup = ReplyKeyboardMarkup(reply_keyboard))
+        f"<b><u>Your answers:</u></b>\n{cart_clear}\n\nTo repeat survey use command /start",
+        parse_mode=telegram.ParseMode.HTML)
     return ConversationHandler.END
 
 def cancel(update: Update, _: CallbackContext):
